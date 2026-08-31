@@ -4,17 +4,17 @@
 
 ![Security](https://img.shields.io/badge/Security-Authorized%20Testing-blue) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) ![Docker](https://img.shields.io/badge/Docker-Enabled-blue?logo=docker)
 
-**N8NKALI** combines **Kali Linux** with the **n8n automation platform**, providing a disposable, root-enabled security-testing environment where n8n workflows can execute and install authorized penetration-testing and CTF tools.
+**N8NKALI** combines **Kali Linux** with the **n8n automation platform**, providing a disposable, root-enabled security-testing environment where workflows can execute authorized penetration-testing and CTF tools.
 
 > ⚠️ **For authorized security testing, CTF competitions, and educational use only.**
 
-## Why root?
+## Security model
 
-Root execution is intentional. Security workflows may need to install packages with `apt` and run tools that require elevated privileges. The recommended deployment keeps N8NKALI isolated in Docker and binds the UI to localhost by default.
+Root execution is intentional because the environment may need to install and execute security packages with elevated privileges. The container is designed to be isolated and disposable.
 
-**Do not expose an unauthenticated N8NKALI instance directly to the public internet.** If you expose webhooks externally, add authentication, target authorization/scope validation, rate limiting, and execution limits.
+The assessment endpoint uses a security gateway that requires an API key, requires the target hostname to be present in `CTF_ALLOWED_HOSTS`, rejects embedded URL credentials, and applies workflow-level request throttling. Security commands are passed through an execution-policy wrapper that blocks shell composition and common host/container escape helpers.
 
----
+The default Compose configuration binds n8n to `127.0.0.1`. Do not publish the service directly to the public internet without TLS, an authenticated reverse proxy, network isolation, and operational monitoring.
 
 ## Quick Start
 
@@ -22,90 +22,81 @@ Root execution is intentional. Security workflows may need to install packages w
 git clone https://github.com/ogtamimi/n8n-Kali-Linux.git
 cd n8n-Kali-Linux/Docker\ Files
 cp .env.example .env
-# Edit .env and set N8N_ENCRYPTION_KEY to a long random value
+```
+
+Edit `.env` and set real values for:
+
+```text
+N8N_ENCRYPTION_KEY=<long-random-secret>
+CTF_API_KEY=<long-random-api-key>
+CTF_ALLOWED_HOSTS=ctf.local,10.10.20.15
+```
+
+Generate strong values with:
+
+```bash
+openssl rand -hex 32
+```
+
+Then start the environment:
+
+```bash
 docker compose up -d --build
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:5678
 ```
 
-The Compose configuration binds port 5678 to `127.0.0.1` by default so the n8n UI is not exposed on every network interface.
+## Assessment endpoint
 
-## Accessing the Terminal
+The maintained workflow is:
 
-```bash
-docker exec -it n8n-kali bash
+```text
+Workflows/ctf-web-assessment-platform.json
 ```
 
-The shell is root by design. The container should be treated as a disposable security-testing environment.
+POST a request containing at least:
 
-## Running Tools via n8n Workflows
-
-Use n8n's **Execute Command** node to run authorized security tools.
-
-### Gobuster
-
-```bash
-gobuster dir -u http://target.example -w /usr/share/seclists/Discovery/Web-Content/common.txt
+```json
+{
+  "target_url": "http://ctf.local",
+  "session_id": "challenge-001",
+  "task": "Assess the authorized CTF target and capture the flag"
+}
 ```
 
-### SQLMap
+Use either:
 
-```bash
-sqlmap -u "http://target.example/page?id=1" --batch --level=3
+```text
+X-API-Key: <CTF_API_KEY>
 ```
 
-### Nikto
+or:
 
-```bash
-nikto -h http://target.example
+```text
+Authorization: Bearer <CTF_API_KEY>
 ```
 
-### WhatWeb
+The target hostname must match one of the exact values configured in `CTF_ALLOWED_HOSTS`.
 
-```bash
-whatweb http://target.example
+## Command execution policy
+
+The container intentionally runs the workflow engine as root, but security commands are routed through:
+
+```text
+/usr/local/bin/n8nkali-exec
 ```
 
-### httpx
+The wrapper permits a curated set of security and output-processing utilities and rejects shell chaining, redirection, command substitution, interactive shell launchers, and common host/container administration helpers.
 
-```bash
-echo "target.example" | httpx -status-code -title -tech-detect
-```
+This is an application-level control, not a replacement for Docker isolation. Do not mount the Docker socket, host root filesystem, or other privileged host interfaces into the container.
 
-Only run these against systems you own or have explicit permission to test.
+## Runtime protections
 
----
-
-## Installing Additional Tools
-
-Inside the container:
-
-```bash
-apt-get update && apt-get install -y <tool-name>
-```
-
-Or from an n8n Execute Command node:
-
-```bash
-apt-get update && apt-get install -y ffuf
-```
-
-Because the environment is root-enabled, workflows can install additional Kali packages when required.
-
----
-
-## Docker Notes
-
-- `N8N_VERSION` can be set to a specific release in `.env` for reproducible builds.
-- The container intentionally runs as root.
-- Persistent n8n data is stored in `./n8n_data`.
-- The default Compose configuration binds n8n to localhost only.
-- Never commit `.env` or real encryption keys.
-- For internet-facing deployments, put n8n behind TLS and authentication and implement webhook/target authorization.
+The Compose configuration applies CPU, memory, PID, and n8n production-concurrency limits. Workflow-level request throttling provides an additional backstop against accidental or abusive bursts. For internet-facing deployments, enforce rate limits at a trusted reverse proxy as well.
 
 ## Repository Structure
 
@@ -113,12 +104,16 @@ Because the environment is root-enabled, workflows can install additional Kali p
 Docker Files/
 ├── dockerfile
 ├── docker-compose.yml
+├── n8nkali-exec
 ├── .dockerignore
 └── .env.example
 
 Workflows/
-├── High end Workflow.json
-└── High end Project.json
+├── ctf-web-exploitation-agent.json
+├── ctf-web-assessment-platform.json
+└── legacy/
+    ├── legacy-ctf-agent-v1.json
+    └── legacy-ctf-platform-v1.json
 ```
 
 ## Links
