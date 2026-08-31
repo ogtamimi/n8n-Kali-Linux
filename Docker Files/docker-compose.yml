@@ -15,9 +15,18 @@ services:
       N8N_HOST: ${N8N_HOST:-localhost}
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-in-.env}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      CTF_API_KEY: ${CTF_API_KEY:?Set CTF_API_KEY in .env}
+      CTF_ALLOWED_HOSTS: ${CTF_ALLOWED_HOSTS:?Set CTF_ALLOWED_HOSTS in .env}
+      CTF_RATE_LIMIT_WINDOW_SECONDS: ${CTF_RATE_LIMIT_WINDOW_SECONDS:-300}
+      CTF_RATE_LIMIT_MAX_REQUESTS: ${CTF_RATE_LIMIT_MAX_REQUESTS:-10}
+      CTF_SESSION_RATE_LIMIT_MAX_REQUESTS: ${CTF_SESSION_RATE_LIMIT_MAX_REQUESTS:-5}
+      N8N_CONCURRENCY_PRODUCTION_LIMIT: ${N8N_CONCURRENCY_PRODUCTION_LIMIT:-2}
     volumes:
       - ./n8n_data:/home/node/.n8n
+    cpus: "2.0"
+    mem_limit: 4g
+    pids_limit: 256
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5678/healthz || exit 1"]
       interval: 30s
