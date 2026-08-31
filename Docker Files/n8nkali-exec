@@ -16,9 +16,10 @@ if [[ -z "$COMMAND" || ${#COMMAND} -gt 4096 ]]; then
   exit 3
 fi
 
-# Commands run as root inside the disposable Kali container by design.
-# Block shell composition, redirection, expansion and command wrappers so the
-# approved-tool policy cannot be bypassed through the shell.
+# Commands intentionally run as root inside the disposable Kali container.
+# This wrapper is a policy boundary: only approved security tools and harmless
+# output-processing utilities are callable. Shell composition and utilities that
+# can launch arbitrary child processes are rejected.
 if [[ "$COMMAND" == *$'\n'* || "$COMMAND" == *$'\r'* || "$COMMAND" == *';'* || "$COMMAND" == *'&&'* || "$COMMAND" == *'||'* || "$COMMAND" == *'>'* || "$COMMAND" == *'<'* || "$COMMAND" == *'`'* || "$COMMAND" == *'$('* || "$COMMAND" == *'${'* ]]; then
   echo "Rejected: shell control syntax is not allowed" >&2
   exit 4
@@ -27,7 +28,7 @@ fi
 PROGRAM="${COMMAND%%[[:space:]]*}"
 
 case "$PROGRAM" in
-  apt-get|apt-cache|curl|wget|http|httpx|nikto|whatweb|nmap|gobuster|ffuf|feroxbuster|dirsearch|wfuzz|sqlmap|python|python3|git|grep|egrep|fgrep|awk|sed|cut|sort|uniq|head|tail|tr|strings|base64|cat|ls|find|pwd|whoami|id|date|printf|env|file|xxd)
+  apt-get|apt-cache|curl|wget|http|httpx|nikto|whatweb|nmap|gobuster|ffuf|feroxbuster|dirsearch|wfuzz|sqlmap|grep|egrep|fgrep|cut|sort|uniq|head|tail|tr|strings|base64|cat|ls|pwd|whoami|id|date|printf|env|file|xxd)
     ;;
   *)
     echo "Rejected: command is not in the approved security-tool policy" >&2
@@ -36,8 +37,8 @@ case "$PROGRAM" in
 esac
 
 case " $COMMAND " in
-  *" docker "*|*" docker.io "*|*" nsenter "*|*" unshare "*|*" mount "*|*" umount "*|*" chroot "*|*" systemctl "*|*" service "*|*" shutdown "*|*" reboot "*|*" poweroff "*|*" sudo "*|*" su "*|*" sh -c "*|*" bash -c "*")
-    echo "Rejected: privileged escape or host-management command" >&2
+  *" docker "*|*" docker.io "*|*" nsenter "*|*" unshare "*|*" mount "*|*" umount "*|*" chroot "*|*" systemctl "*|*" service "*|*" shutdown "*|*" reboot "*|*" poweroff "*|*" sudo "*|*" su "*|*" bash "*|*" sh "*|*" python "*|*" python3 "*|*" perl "*|*" ruby "*|*" node "*|*" xargs "*|*" find "*" )
+    echo "Rejected: shell, interpreter, process-launching or host-management command" >&2
     exit 6
     ;;
 esac
