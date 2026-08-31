@@ -2,11 +2,10 @@ FROM kalilinux/kali-rolling
 
 USER root
 
-# n8n intentionally runs as root in this disposable Kali security-testing
+# n8n intentionally runs as root inside this disposable Kali security-testing
 # container so workflows can install and execute security tools with apt.
-# Do NOT expose this container directly to an untrusted network.
+# The command wrapper adds an execution policy before shell commands run.
 
-# Install base dependencies without upgrading the entire Kali image.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       ca-certificates \
@@ -18,20 +17,18 @@ RUN apt-get update && \
       build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 22 LTS.
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Pin N8N_VERSION at build time for reproducible deployments.
 ARG N8N_VERSION=latest
 RUN npm install -g n8n@${N8N_VERSION} && npm cache clean --force
 
-# n8n data directory. Compose maps this to the persistent volume.
+COPY n8nkali-exec /usr/local/bin/n8nkali-exec
+RUN chmod 0755 /usr/local/bin/n8nkali-exec && mkdir -p /home/node/.n8n
+
 ENV N8N_USER_FOLDER=/home/node
 ENV N8N_PORT=5678
-
-RUN mkdir -p /home/node/.n8n
 
 EXPOSE 5678
 
