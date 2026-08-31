@@ -1,0 +1,36 @@
+{
+  "name": "High end Project (Old)",
+  "nodes": [
+    {
+      "parameters": {"functionCode": "const pageContent = $json[\"body\"] || \"No content\";\nconst description = $json[\"description\"] || \"none\";\nreturn [{ json: { prompt: `Analyze this CTF web challenge and find the vulnerability.\\n\\nDescription: ${description}\\n\\nContent:\\n${pageContent}` } }];\n"},
+      "id": "6e329dbd-41c1-4962-b860-38a22322817c",
+      "name": "Format Gemini Prompt",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [-240,144]
+    },
+    {
+      "parameters": {"promptType":"define","text":"={{ $json.prompt }}","options":{"systemMessage":"you are CTF web solver dont use sqlite3 command , use command in tools to capture the flag\nyou have 2 tools python and execution commands\nif any command failed to execute try other one"}},
+      "type":"@n8n/n8n-nodes-langchain.agent","typeVersion":3,"position":[-96,144],"id":"2795237e-8bcb-4d24-ae66-6c40ec9d45c7","name":"AI Agent"
+    },
+    {
+      "parameters":{"executeOnce":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Execute_Once', ``, 'boolean') }}","command":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Command', ``, 'string') }}"},
+      "type":"n8n-nodes-base.executeCommandTool","typeVersion":1,"position":[48,368],"id":"e3f8a1c7-4d8f-417d-9026-fd09621b1eb0","name":"Execute Command"
+    },
+    {"parameters":{"httpMethod":"POST","path":"chatbot","responseMode":"responseNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[-320,-80],"id":"8170767e-bdb9-450a-a0bb-e8069bcb483d","name":"Webhook","webhookId":"e1ce3218-95e2-4a8f-ab13-31b1aad0dba6"},
+    {"parameters":{"options":{}},"type":"n8n-nodes-base.respondToWebhook","typeVersion":1.4,"position":[784,368],"id":"b939c4c9-f16d-4de9-a479-cde0d8bd9420","name":"Respond to Webhook"},
+    {"parameters":{"description":"use this tool if you need python to solve the challenge","language":"python"},"type":"@n8n/n8n-nodes-langchain.toolCode","typeVersion":1.3,"position":[48,528],"id":"44a61b2b-807c-4afe-a52b-07d6e5f18917","name":"Code Tool"},
+    {"parameters":{"options":{}},"type":"@n8n/n8n-nodes-langchain.chatTrigger","typeVersion":1.3,"position":[-432,144],"id":"47d37c40-9ad6-4f48-8859-b365e1b9cdd6","name":"When chat message received","webhookId":"687f174c-8db4-41d4-989e-22e1478f3832"},
+    {"parameters":{"promptType":"define","text":"take text from previous node and make more professional convert it to clear text after that split it into 2 sections first is Flag and Second is how we capure it add them to db that connected and send flag for webhook","options":{}},"type":"@n8n/n8n-nodes-langchain.agent","typeVersion":3,"position":[176,144],"id":"5822aba2-8aad-4548-9d06-4a2f31559990","name":"AI Agent1"},
+    {"parameters":{"dataTableId":{"__rl":true,"value":"lDDamNXP6qMzFLJv","mode":"list","cachedResultName":"n8n","cachedResultUrl":"/projects/Woej2QhCf3fjMiix/datatables/lDDamNXP6qMzFLJv"},"columns":{"mappingMode":"defineBelow","value":{"description":"={{ $json.output.description }}","flag":"={{ $json.output.Flag }}"},"matchingColumns":[],"schema":[{"id":"flag","displayName":"flag","required":false,"defaultMatch":false,"display":true,"type":"string","readOnly":false,"removed":false},{"id":"description","displayName":"description","required":false,"defaultMatch":false,"display":true,"type":"string","readOnly":false,"removed":false}],"attemptToConvertTypes":false,"convertFieldsToString":false},"options":{}},"type":"n8n-nodes-base.dataTable","typeVersion":1,"position":[656,368],"id":"53cbdcb4-2bca-4a48-b308-24257323cd3f","name":"Insert row"},
+    {"parameters":{"text":"={{ $json.output }}","attributes":{"attributes":[{"name":"Flag","description":"Flag only"},{"name":"description","description":"rest of information"}]},"options":{}},"type":"@n8n/n8n-nodes-langchain.informationExtractor","typeVersion":1.2,"position":[480,144],"id":"b02b7b72-6066-4d15-9657-8d86f483092d","name":"Information Extractor"},
+    {"parameters":{"sessionIdType":"customKey","sessionKey":"={{ $('When chat message received').item.json.sessionId }}","contextWindowLength":20},"type":"@n8n/n8n-nodes-langchain.memoryBufferWindow","typeVersion":1.3,"position":[0,0],"id":"9478b58c-bec4-405f-8b72-570badfe1564","name":"Memory I"},
+    {"parameters":{"contextWindowLength":100},"type":"@n8n/n8n-nodes-langchain.memoryBufferWindow","typeVersion":1.3,"position":[272,0],"id":"1eb0019e-90f6-44a5-9506-f59d7ac426e4","name":"Memory II"},
+    {"parameters":{"options":{}},"type":"@n8n/n8n-nodes-langchain.lmChatGoogleGemini","typeVersion":1,"position":[-96,368],"id":"a52ec25a-6eb4-4c02-9b4a-d106499e1df5","name":"Gemini Brain I","credentials":{"googlePalmApi":{"id":"XB6dYdhU7ENXlLpE","name":"Google Gemini(PaLM) Api account"}}},
+    {"parameters":{"options":{}},"type":"@n8n/n8n-nodes-langchain.lmChatGoogleGemini","typeVersion":1,"position":[176,288],"id":"836914ef-1b5d-4b95-9401-21f7b5f604b6","name":"Gemini Brain II","credentials":{"googlePalmApi":{"id":"XB6dYdhU7ENXlLpE","name":"Google Gemini(PaLM) Api account"}}},
+    {"parameters":{"options":{}},"type":"@n8n/n8n-nodes-langchain.lmChatGoogleGemini","typeVersion":1,"position":[480,320],"id":"ac6e1e07-249b-4cba-a568-97db8caeffff","name":"Gemini Brain III","credentials":{"googlePalmApi":{"id":"XB6dYdhU7ENXlLpE","name":"Google Gemini(PaLM) Api account"}}}
+  ],
+  "pinData":{},
+  "connections":{"Format Gemini Prompt":{"main":[[{"node":"AI Agent","type":"main","index":0}]]},"AI Agent":{"main":[[{"node":"AI Agent1","type":"main","index":0}]]},"Execute Command":{"ai_tool":[[{"node":"AI Agent","type":"ai_tool","index":0}]]},"Webhook":{"main":[[{"node":"Format Gemini Prompt","type":"main","index":0}]]},"Code Tool":{"ai_tool":[[{"node":"AI Agent","type":"ai_tool","index":0}]]},"When chat message received":{"main":[[{"node":"Format Gemini Prompt","type":"main","index":0}]]},"AI Agent1":{"main":[[{"node":"Information Extractor","type":"main","index":0}]]},"Information Extractor":{"main":[[{"node":"Insert row","type":"main","index":0}]]},"Insert row":{"main":[[{"node":"Respond to Webhook","type":"main","index":0}]]},"Memory I":{"ai_memory":[[{"node":"AI Agent","type":"ai_memory","index":0}]]},"Memory II":{"ai_memory":[[{"node":"AI Agent1","type":"ai_memory","index":0}]]},"Gemini Brain I":{"ai_languageModel":[[{"node":"AI Agent","type":"ai_languageModel","index":0}]]},"Gemini Brain II":{"ai_languageModel":[[{"node":"AI Agent1","type":"ai_languageModel","index":0}]]},"Gemini Brain III":{"ai_languageModel":[[{"node":"Information Extractor","type":"ai_languageModel","index":0}]]}},
+  "active":false,"settings":{"executionOrder":"v1"},"versionId":"85837e10-8a53-4f5a-ad23-091d933cc714","meta":{"templateCredsSetupCompleted":true,"instanceId":"31de2dd47e9c8d5831b6e66057c3ef449c35723c09917685d6d7dd4c0862900b"},"id":"40hwqtYsakPwzwXG","tags":[]
+}
