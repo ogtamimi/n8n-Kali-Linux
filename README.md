@@ -1,136 +1,133 @@
-![N8NKALI Banner](https://github.com/ogtamimi/n8n-kali/blob/main/banner.png?raw=true)
- 
+![N8NKALI Banner](https://github.com/ogtamimi/n8n-Kali-Linux/blob/main/banner.png?raw=true)
+
 # N8NKALI — Automated Pentesting & CTF Platform
- 
-![Security](https://img.shields.io/badge/Security-Responsible%20Disclosure-blue) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) ![Docker](https://img.shields.io/badge/Docker-Hub-blue?logo=docker)
- 
-**N8NKALI** is a ready-to-use Docker environment that combines **Kali Linux** with the **n8n automation platform**, giving you a visual workflow engine with full access to penetration testing and Web-CTF tools no setup required.
- 
+
+![Security](https://img.shields.io/badge/Security-Authorized%20Testing-blue) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) ![Docker](https://img.shields.io/badge/Docker-Enabled-blue?logo=docker)
+
+**N8NKALI** combines **Kali Linux** with the **n8n automation platform**, providing a disposable, root-enabled security-testing environment where n8n workflows can execute and install authorized penetration-testing and CTF tools.
+
 > ⚠️ **For authorized security testing, CTF competitions, and educational use only.**
- 
+
+## Why root?
+
+Root execution is intentional. Security workflows may need to install packages with `apt` and run tools that require elevated privileges. The recommended deployment keeps N8NKALI isolated in Docker and binds the UI to localhost by default.
+
+**Do not expose an unauthenticated N8NKALI instance directly to the public internet.** If you expose webhooks externally, add authentication, target authorization/scope validation, rate limiting, and execution limits.
+
 ---
- 
+
 ## Quick Start
- 
-Pull and run the container with a single command:
- 
+
 ```bash
-docker run -d --name n8nkali -p 5678:5678 ogtamimi/n8nkali:latest
+git clone https://github.com/ogtamimi/n8n-Kali-Linux.git
+cd n8n-Kali-Linux/Docker\ Files
+cp .env.example .env
+# Edit .env and set N8N_ENCRYPTION_KEY to a long random value
+docker compose up -d --build
 ```
- 
-Then open your browser and navigate to:
- 
-```
+
+Then open:
+
+```text
 http://localhost:5678
 ```
- 
-That's it. n8n is running with full access to all preinstalled pentest tools.
- 
----
- 
+
+The Compose configuration binds port 5678 to `127.0.0.1` by default so the n8n UI is not exposed on every network interface.
+
 ## Accessing the Terminal
- 
-Drop into a root shell inside the container at any time:
- 
+
 ```bash
-docker exec -it n8nkali bash
+docker exec -it n8n-kali bash
 ```
- 
-From here you can run any tool manually, inspect output, or test commands before adding them to a workflow.
- 
----
-![Execute Command Node](https://github.com/ogtamimi/n8n-Cybersecurity/blob/a62bd4ff8e3aa026880b602aa6c01745ce5ce7ab/Assets/Screenshot%202026-01-05%20060604.png)
- 
+
+The shell is root by design. The container should be treated as a disposable security-testing environment.
 
 ## Running Tools via n8n Workflows
- 
-The main power of N8NKALI is chaining tools together visually. Use the **Execute Command** node in n8n to run any tool.
- 
-### Example Directory Bruteforce with Gobuster
- 
-```bash
-gobuster dir -u http://target.com -w /usr/share/seclists/Discovery/Web-Content/common.txt
-```
- 
-### Example SQL Injection Scan with SQLMap
- 
-```bash
-sqlmap -u "http://target.com/page?id=1" --batch --level=3
-```
- 
-### Example Web Recon with Nikto
- 
-```bash
-nikto -h http://target.com
-```
- 
-### Example Technology Fingerprinting with WhatWeb
- 
-```bash
-whatweb http://target.com
-```
- 
-### Example HTTP Probing with httpx
- 
-```bash
-echo "target.com" | httpx -status-code -title -tech-detect
-```
- 
-Paste any of these into an **Execute Command** node in n8n, connect it to HTTP Request or Webhook nodes, and build full automated recon or CTF-solving pipelines.
- 
----
- ![n8n Workflow View](https://github.com/ogtamimi/n8n-Cybersecurity/blob/a62bd4ff8e3aa026880b602aa6c01745ce5ce7ab/Assets/Screenshot%202026-01-05%20055847.png)
 
-## Preinstalled Tools
- 
-| Category | Tools |
-|---|---|
-| Recon & Scanning | `nikto`, `whatweb`, `httpx`, `httpie` |
-| Directory Fuzzing | `gobuster`, `dirsearch`, `wfuzz` |
-| Injection Testing | `sqlmap` |
-| Wordlists | `SecLists` |
-| Scripting & Dev | `python3`, `pip`, `nodejs`, `npm` |
-| Utilities | `curl`, `wget`, `git`, `nano` |
- 
+Use n8n's **Execute Command** node to run authorized security tools.
+
+### Gobuster
+
+```bash
+gobuster dir -u http://target.example -w /usr/share/seclists/Discovery/Web-Content/common.txt
+```
+
+### SQLMap
+
+```bash
+sqlmap -u "http://target.example/page?id=1" --batch --level=3
+```
+
+### Nikto
+
+```bash
+nikto -h http://target.example
+```
+
+### WhatWeb
+
+```bash
+whatweb http://target.example
+```
+
+### httpx
+
+```bash
+echo "target.example" | httpx -status-code -title -tech-detect
+```
+
+Only run these against systems you own or have explicit permission to test.
+
 ---
- 
+
 ## Installing Additional Tools
- 
-### From the container shell:
- 
+
+Inside the container:
+
 ```bash
-apt update && apt install -y <tool-name>
+apt-get update && apt-get install -y <tool-name>
 ```
- 
-### Directly from an n8n Execute Command node:
- 
+
+Or from an n8n Execute Command node:
+
 ```bash
-apt install -y ffuf
+apt-get update && apt-get install -y ffuf
 ```
- 
-This lets you install tools on-the-fly as part of a workflow, without ever leaving n8n.
- 
+
+Because the environment is root-enabled, workflows can install additional Kali packages when required.
+
 ---
- 
- 
-![CTF Workflow Example](https://github.com/ogtamimi/n8n-Cybersecurity/blob/a62bd4ff8e3aa026880b602aa6c01745ce5ce7ab/Assets/Screenshot%202026-01-13%20122827.png)
- 
----
- 
+
+## Docker Notes
+
+- `N8N_VERSION` can be set to a specific release in `.env` for reproducible builds.
+- The container intentionally runs as root.
+- Persistent n8n data is stored in `./n8n_data`.
+- The default Compose configuration binds n8n to localhost only.
+- Never commit `.env` or real encryption keys.
+- For internet-facing deployments, put n8n behind TLS and authentication and implement webhook/target authorization.
+
+## Repository Structure
+
+```text
+Docker Files/
+├── dockerfile
+├── docker-compose.yml
+├── .dockerignore
+└── .env.example
+
+Workflows/
+├── High end Workflow.json
+└── High end Project.json
+```
+
 ## Links
- 
+
 - [Docker Hub](https://hub.docker.com/repository/docker/ogtamimi/n8nkali/general)
-- [Prebuilt Workflows](https://github.com/ogtamimi/n8n-Cybersecurity/tree/main/Workflows)
- 
----
- 
+- [Workflows](https://github.com/ogtamimi/n8n-Kali-Linux/tree/main/Workflows)
+
 ## License
- 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
- 
-Licensed under the **MIT License** free to use, modify, and distribute with proper credit.
- 
----
- 
+
+Licensed under the **MIT License** — free to use, modify, and distribute with proper credit.
+
 Made with ❤️ by **Omar Al Tamimi**
- 
